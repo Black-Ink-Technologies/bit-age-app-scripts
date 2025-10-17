@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed to access all tags
+          fetch-depth: 0
 
       - name: Set up Git user
         run: |
