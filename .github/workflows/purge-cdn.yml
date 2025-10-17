@@ -1,48 +1,25 @@
-name: Purge jsDelivr CDN by Branch
+name: Purge jsDelivr CDN (Main Only)
 
 on:
   push:
     branches:
-      - develop
-      - staging
       - main
   workflow_dispatch:
-    inputs:
-      branch:
-        description: "Branch to purge CDN for"
-        required: false
-        default: "develop"
 
 jobs:
-  purge-develop:
-    if: github.ref == 'refs/heads/develop' || github.event.inputs.branch == 'develop'
+  purge-all:
     runs-on: ubuntu-latest
     steps:
-      - name: Purge develop CDN
+      - name: Purge all CDN URLs
         run: |
-          CDN_URL="https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.develop.min.js"
-          echo "Purging CDN for develop branch: $CDN_URL"
-          RESPONSE=$(curl -X GET "$CDN_URL")
-          echo "Response: $RESPONSE"
+          declare -a CDN_URLS=(
+            "https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.develop.min.js"
+            "https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.staging.min.js"
+            "https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.min.js"
+          )
 
-  purge-staging:
-    if: github.ref == 'refs/heads/staging' || github.event.inputs.branch == 'staging'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Purge staging CDN
-        run: |
-          CDN_URL="https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.staging.min.js"
-          echo "Purging CDN for staging branch: $CDN_URL"
-          RESPONSE=$(curl -X GET "$CDN_URL")
-          echo "Response: $RESPONSE"
-
-  purge-main:
-    if: github.ref == 'refs/heads/main' || github.event.inputs.branch == 'main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Purge main CDN
-        run: |
-          CDN_URL="https://purge.jsdelivr.net/gh/Black-Ink-Technologies/bit-age-app-scripts@1.x.x/script.min.js"
-          echo "Purging CDN for main branch: $CDN_URL"
-          RESPONSE=$(curl -X GET "$CDN_URL")
-          echo "Response: $RESPONSE"
+          for url in "${CDN_URLS[@]}"; do
+            echo "Purging CDN: $url"
+            RESPONSE=$(curl -X GET "$url")
+            echo "Response: $RESPONSE"
+          done
