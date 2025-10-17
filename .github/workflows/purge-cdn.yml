@@ -34,11 +34,19 @@ jobs:
           PATCH=$((PATCH + 1))
           NEW_TAG="${MAJOR}.${MINOR}.${PATCH}"
 
+          # Check if tag already exists, if so keep incrementing
+          while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
+            echo "Tag $NEW_TAG already exists, incrementing..."
+            PATCH=$((PATCH + 1))
+            NEW_TAG="${MAJOR}.${MINOR}.${PATCH}"
+          done
+
           echo "New tag will be: $NEW_TAG"
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
 
       - name: Create and push new tag
-        if: github.ref == 'refs/heads/main'
+        # Only create tag on main branch push, NOT on tag push
+        if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
@@ -47,7 +55,8 @@ jobs:
           echo "Created and pushed new tag: $NEW_TAG"
 
       - name: Mark tag as latest release
-        if: github.ref == 'refs/heads/main'
+        # Only create release on main branch push, NOT on tag push
+        if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
@@ -55,6 +64,14 @@ jobs:
             --title "Release $NEW_TAG" \
             --notes "Automated release for version $NEW_TAG" \
             --latest
+
+      - name: Set tag variable for tag-triggered runs
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Extract tag from ref (refs/tags/1.0.13 -> 1.0.13)
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "NEW_TAG=$TAG_NAME" >> $GITHUB_ENV
+          echo "Using existing tag: $TAG_NAME"
 
       - name: Purge jsDelivr CDN
         run: |
